@@ -31,6 +31,25 @@ fastify.get('/photos', async (req, res) => {
     }
 
 })
+
+fastify.get('/users/:username', async (req, res) => {
+
+    const username = req.params.username
+
+    const user = await redisClient.get(`users/${username}`)
+    if (user != null) {
+        console.log("Cache Hit")
+        res.send(JSON.parse(user))
+    } else {
+        console.log("cache miss")
+        const { data } = await axios.get(`https://api.github.com/users/${username}`)
+        var dataa = { login: data.login, repos: data.public_repos }
+        redisClient.setEx(`users/${username}`, DEFAULT_EXPIRATION, JSON.stringify(dataa))
+        res.send(dataa)
+    }
+
+
+})
 redisClient.on('connect', function () {
     console.log('Connected!');
 });
